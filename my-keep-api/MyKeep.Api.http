@@ -1,0 +1,65 @@
+@MyKeep.Api_HostAddress = http://localhost:5062
+@token = replace-with-access-token
+@noteId = replace-with-note-id
+
+### Health
+GET {{MyKeep.Api_HostAddress}}/api/health
+
+### Register
+POST {{MyKeep.Api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Demo User",
+  "email": "demo@example.com",
+  "password": "replace-with-strong-password"
+}
+
+### Login
+POST {{MyKeep.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "demo@example.com",
+  "password": "replace-with-strong-password"
+}
+
+### Current user
+GET {{MyKeep.Api_HostAddress}}/api/auth/me
+Authorization: Bearer {{token}}
+
+### List notes
+GET {{MyKeep.Api_HostAddress}}/api/notes
+Authorization: Bearer {{token}}
+
+### Create note
+POST {{MyKeep.Api_HostAddress}}/api/notes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "План на тиждень",
+  "content": "Записати перші нотатки.",
+  "color": "lilac",
+  "favorite": true
+}
+
+### Get a note
+GET {{MyKeep.Api_HostAddress}}/api/notes/{{noteId}}
+Authorization: Bearer {{token}}
+
+### Update note
+PUT {{MyKeep.Api_HostAddress}}/api/notes/{{noteId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Оновлений заголовок",
+  "content": "Оновлений текст.",
+  "color": "blue",
+  "favorite": false
+}
+
+### Delete note
+DELETE {{MyKeep.Api_HostAddress}}/api/notes/{{noteId}}
+Authorization: Bearer {{token}}

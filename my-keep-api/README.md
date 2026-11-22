@@ -1,0 +1,49 @@
+# My Keep API
+
+ASP.NET Core 10 Web API for the My Keep notes app. It uses SQL Server via EF Core and JWT bearer authentication.
+
+## Requirements
+
+- .NET 10 SDK
+- SQL Server reachable at `localhost:1433`
+
+## Configure local secrets
+
+Run these commands from `D:\Curs\my-keep-api`. Keep the SQL password and signing key out of source control:
+
+```powershell
+dotnet user-secrets init
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost,1433;Database=MyKeepDb;User Id=sa;Password=YOUR_SQL_PASSWORD;Encrypt=True;TrustServerCertificate=True"
+dotnet user-secrets set "Jwt:SigningKey" "REPLACE_WITH_AT_LEAST_32_RANDOM_UTF8_BYTES"
+```
+
+The configured SQL Server instance uses the `sa` login. Migrations create the `MyKeepDb` database and its tables when the API starts.
+
+## Run
+
+```powershell
+dotnet run --launch-profile http
+```
+
+The API listens at `http://localhost:5062`. Development OpenAPI JSON is available at `/openapi/v1.json`. The CORS policy allows the Next.js app at `http://localhost:3000`; override `Cors__AllowedOrigins__0` for a different frontend origin.
+
+## Endpoints
+
+| Method | Path | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/api/health` | No | Health check |
+| `POST` | `/api/auth/register` | No | Create an account; returns `{ user, accessToken }` |
+| `POST` | `/api/auth/login` | No | Sign in; returns `{ user, accessToken }` |
+| `GET` | `/api/auth/me` | Bearer | Get the authenticated user |
+| `POST` | `/api/auth/logout` | Bearer | End the client session |
+| `GET` | `/api/notes` | Bearer | List the current user's notes; supports `search` and `favorite` query parameters |
+| `GET` | `/api/notes/{id}` | Bearer | Get one of the current user's notes |
+| `POST` | `/api/notes` | Bearer | Create a note |
+| `PUT` | `/api/notes/{id}` | Bearer | Update a note |
+| `DELETE` | `/api/notes/{id}` | Bearer | Delete a note |
+
+Send the access token in `Authorization: Bearer <accessToken>`. Note fields and color values match the frontend model (`title`, `content`, `color`, `favorite`, `createdAt`, `updatedAt`). The API returns GUIDs as strings in JSON.
+
+Logout is stateless: the client must discard its access token; the token expires after 60 minutes. Passwords are stored as ASP.NET Identity password hashes, never as plain text.
+
+Example requests are in `MyKeep.Api.http`.
