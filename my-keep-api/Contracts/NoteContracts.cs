@@ -14,6 +14,8 @@ public sealed class SaveNoteRequest
     public string Color { get; init; } = string.Empty;
 
     public bool Favorite { get; init; }
+
+    public DateTimeOffset? ExpiresAt { get; init; }
 }
 
 public sealed record NoteResponse(
@@ -24,4 +26,5 @@ public sealed record NoteResponse(
     string Color,
     bool Favorite,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    DateTimeOffset? ExpiresAt);

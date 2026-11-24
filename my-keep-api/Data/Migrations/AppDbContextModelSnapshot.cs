@@ -40,6 +40,9 @@ namespace MyKeep.Api.Data.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<bool>("Favorite")
                         .HasColumnType("bit");
 
@@ -55,6 +58,9 @@ namespace MyKeep.Api.Data.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasFilter("[ExpiresAt] IS NOT NULL");
 
                     b.HasIndex("UserId", "UpdatedAt");
 

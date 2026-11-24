@@ -10,5 +10,6 @@ public sealed class NoteEntity
     public bool Favorite { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
+    public DateTimeOffset? ExpiresAt { get; set; }
     public UserEntity User { get; set; } = null!;
 }

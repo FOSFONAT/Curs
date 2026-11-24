@@ -30,7 +30,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(note => note.Color).HasMaxLength(20).IsRequired();
             entity.Property(note => note.CreatedAt).HasColumnType("datetimeoffset");
             entity.Property(note => note.UpdatedAt).HasColumnType("datetimeoffset");
+            entity.Property(note => note.ExpiresAt).HasColumnType("datetimeoffset");
             entity.HasIndex(note => new { note.UserId, note.UpdatedAt });
+            entity.HasIndex(note => note.ExpiresAt)
+                .HasFilter("[ExpiresAt] IS NOT NULL");
             entity.HasOne(note => note.User)
                 .WithMany(user => user.Notes)
                 .HasForeignKey(note => note.UserId)

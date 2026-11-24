@@ -42,7 +42,9 @@ The API listens at `http://localhost:5062`. Development OpenAPI JSON is availabl
 | `PUT` | `/api/notes/{id}` | Bearer | Update a note |
 | `DELETE` | `/api/notes/{id}` | Bearer | Delete a note |
 
-Send the access token in `Authorization: Bearer <accessToken>`. Note fields and color values match the frontend model (`title`, `content`, `color`, `favorite`, `createdAt`, `updatedAt`). The API returns GUIDs as strings in JSON.
+Send the access token in `Authorization: Bearer <accessToken>`. Note fields and color values match the frontend model (`title`, `content`, `color`, `favorite`, `createdAt`, `updatedAt`, `expiresAt`). Set `expiresAt` to `null` for a permanent note or to a future ISO 8601 date/time for a temporary one.
+
+Expired notes are immediately omitted from note reads and physically removed by a background service at up to 15-second intervals, including when no browser is open. The API rejects expiration dates that are not in the future. Database migrations are applied automatically on API startup.
 
 Logout is stateless: the client must discard its access token; the token expires after 60 minutes. Passwords are stored as ASP.NET Identity password hashes, never as plain text.
 

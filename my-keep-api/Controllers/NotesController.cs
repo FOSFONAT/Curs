@@ -25,8 +25,11 @@ public sealed class NotesController(AppDbContext db) : ControllerBase
             return Unauthorized();
         }
 
+        var now = DateTimeOffset.UtcNow;
         var note = await db.Notes.AsNoTracking().SingleOrDefaultAsync(
-            item => item.Id == id && item.UserId == userId,
+            item => item.Id == id &&
+                item.UserId == userId &&
+                (item.ExpiresAt == null || item.ExpiresAt > now),
             cancellationToken);
         return note is null ? NotFound() : Ok(ToResponse(note));
     }
@@ -43,7 +46,10 @@ public sealed class NotesController(AppDbContext db) : ControllerBase
             return Unauthorized();
         }
 
-        var query = db.Notes.AsNoTracking().Where(note => note.UserId == userId);
+        var now = DateTimeOffset.UtcNow;
+        var query = db.Notes.AsNoTracking().Where(note =>
+            note.UserId == userId &&
+            (note.ExpiresAt == null || note.ExpiresAt > now));
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim();
@@ -76,6 +82,11 @@ public sealed class NotesController(AppDbContext db) : ControllerBase
         }
 
         var now = DateTimeOffset.UtcNow;
+        if (request.ExpiresAt is { } expiresAt && expiresAt <= now)
+        {
+            return BadRequest(ExpirationMustBeFuture());
+        }
+
         var note = new NoteEntity
         {
             Id = Guid.NewGuid(),
@@ -85,7 +96,8 @@ public sealed class NotesController(AppDbContext db) : ControllerBase
             Color = request.Color,
             Favorite = request.Favorite,
             CreatedAt = now,
-            UpdatedAt = now
+            UpdatedAt = now,
+            ExpiresAt = request.ExpiresAt?.ToUniversalTime()
         };
         db.Notes.Add(note);
         await db.SaveChangesAsync(cancellationToken);
@@ -106,8 +118,16 @@ public sealed class NotesController(AppDbContext db) : ControllerBase
             return Unauthorized();
         }
 
+        if (request.ExpiresAt is { } expiresAt && expiresAt <= DateTimeOffset.UtcNow)
+        {
+            return BadRequest(ExpirationMustBeFuture());
+        }
+
+        var now = DateTimeOffset.UtcNow;
         var note = await db.Notes.SingleOrDefaultAsync(
-            item => item.Id == id && item.UserId == userId,
+            item => item.Id == id &&
+                item.UserId == userId &&
+                (item.ExpiresAt == null || item.ExpiresAt > now),
             cancellationToken);
         if (note is null)
         {
@@ -118,8 +138,16 @@ public sealed class NotesController(AppDbContext db) : ControllerBase
         note.Content = request.Content.Trim();
         note.Color = request.Color;
         note.Favorite = request.Favorite;
-        note.UpdatedAt = DateTimeOffset.UtcNow;
-        await db.SaveChangesAsync(cancellationToken);
+        note.UpdatedAt = now;
+        note.ExpiresAt = request.ExpiresAt?.ToUniversalTime();
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return NotFound();
+        }
 
         return Ok(ToResponse(note));
     }
@@ -143,7 +171,14 @@ public sealed class NotesController(AppDbContext db) : ControllerBase
         }
 
         db.Notes.Remove(note);
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return NotFound();
+        }
         return NoContent();
     }
 
@@ -159,5 +194,16 @@ public sealed class NotesController(AppDbContext db) : ControllerBase
             note.Color,
             note.Favorite,
             note.CreatedAt,
-            note.UpdatedAt);
+            note.UpdatedAt,
+            note.ExpiresAt);
+
+    private static ValidationProblemDetails ExpirationMustBeFuture() =>
+        new(new Dictionary<string, string[]>
+        {
+            ["expiresAt"] = ["Дата видалення має бути в майбутньому."]
+        })
+        {
+            Status = StatusCodes.Status400BadRequest,
+            Title = "Некоректний таймер нотатки."
+        };
 }
